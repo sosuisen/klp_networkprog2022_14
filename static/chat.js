@@ -1,9 +1,11 @@
 let socket;
 let userName = '';
+let roomName = '';
 
 // (2) 退室時のUIリセット
 const resetUI = () => {
   document.getElementById('userName').disabled = false;
+  document.getElementById('roomName').disabled = false;
   document.getElementById('enterLeaveButton').innerText = '入室';
   document.getElementById('status').innerText = '[退室中]';
 };
@@ -13,7 +15,8 @@ const connect = () => {
   // ユーザ名をセットして送信
   socket = io('ws://localhost:8080/', {
     query: {
-      userName
+      userName,
+      roomName,
     },
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
@@ -27,16 +30,16 @@ const connect = () => {
   // (4) メッセージ受信時の処理を追加
   socket.on('chat message', obj => {
     if (obj.type === 'message') {
-      document.getElementById('fromServer').innerHTML += `${obj.name}: ${obj.data}<br />`;
+      document.getElementById('fromServer').innerHTML += `[${obj.roomName}] ${obj.name}: ${obj.data}<br />`;
     }
     else if (obj.type === 'enter') {
-      document.getElementById('fromServer').innerHTML += `${obj.name}が入室しました！<br />`;
+      document.getElementById('fromServer').innerHTML += `[${obj.roomName}] ${obj.name}が入室しました！<br />`;
     }
     else if (obj.type === 'leave') {
-      document.getElementById('fromServer').innerHTML += `${obj.name}が退室しました！<br />`;
+      document.getElementById('fromServer').innerHTML += `[${obj.roomName}] ${obj.name}が退室しました！<br />`;
     }
     else if (obj.type === 'typing') {
-      document.getElementById('typing').innerText = `${obj.name}が入力中です`;
+      document.getElementById('typing').innerText = `[${obj.roomName}] ${obj.name}が入力中です`;
       setTimeout(()=>{
         document.getElementById('typing').innerText = '';
       }, 1000);
@@ -103,8 +106,10 @@ const enterLeaveRoom = () => {
   }
   else {
     userName = document.getElementById('userName').value;
+    roomName = document.getElementById('roomName').value;
     if (userName) {
       document.getElementById('userName').disabled = true;
+      document.getElementById('roomName').disabled = true;
       document.getElementById('enterLeaveButton').innerText = '退室';
       connect();
     }
