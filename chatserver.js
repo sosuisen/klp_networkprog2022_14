@@ -126,22 +126,17 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     console.log(`[WebSocket] disconnected from ${userName} (${ip})`);
 
-    // すべてのルームからメンバーを削除
-    // （クライアントの不正な切断による退室には未対応）
-    Object.keys(rooms).forEach(roomName => {
-      if (rooms[roomName].members[userName]) {
-        // 退室したクライアントを除く全ての入室中のクライアントへ送信
-        const mes = {
-          type: 'leave',
-          name: userName,
-          roomName,
-        };
-        socket.to(roomName).emit('chat message', mes);
-        // ログに追加
-        rooms[roomName].log.push(mes);
-      }
-      delete rooms[roomName].members[userName];
-    });
+    // ルームからメンバーを削除
+    // 退室したクライアントを除く全ての入室中のクライアントへ送信
+    const mes = {
+      type: 'leave',
+      name: userName,
+      roomName,
+    };
+    socket.to(roomName).emit('chat message', mes);
+    // ログに追加
+    rooms[roomName].log.push(mes);
+    delete rooms[roomName].members[userName];
   });
 
   // (4) タイピング中というイベントを処理
