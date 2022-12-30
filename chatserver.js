@@ -20,7 +20,7 @@ server.listen({ host, port }, () => {
 
 const io = new Server(server);
 
-const members = {};
+const rooms = {};
 io.on('connection', socket => {
   // （１）入室時の処理
   const ip = socket.handshake.address;
@@ -39,10 +39,14 @@ io.on('connection', socket => {
 
   // ルームへメンバーを追加
   // 同じ名前のユーザが接続してきた場合には未対応
-  if (!members[roomName]) {
-    members[roomName] = {};
+  if (!rooms[roomName]) {
+    rooms[roomName] = {};
+    // ルームのメンバーを格納するオブジェクト
+    rooms[roomName].members = {};
+    // ルームのログを格納する配列
+    rooms[roomName].log = [];
   }
-  members[roomName][userName] = socket;
+  rooms[roomName].members[userName] = socket;
 
   console.log(`[WebSocket] connected from [${roomName}] ${userName} (${ip})`);
   // 1-2) 全ての入室中のクライアントへ通知
@@ -76,7 +80,7 @@ io.on('connection', socket => {
           req.data = Date();
         }
         else if (message === 'list') {
-          req.data = '現在の入室者は ' + Object.keys(members[roomName]).join(', ');
+          req.data = '現在の入室者は ' + Object.keys(rooms[roomName].members).join(', ');
         }
         else {
           return;
@@ -92,10 +96,10 @@ io.on('connection', socket => {
     // 送信元のuserNameをnameプロパティを追加
     req.name = userName;
 
-    if(messageTo && members[roomName][messageTo]) {
+    if(messageTo && rooms[roomName].members[messageTo]) {
       // 自分自身と指定クライアントへのみ転送
       socket.emit('chat message', req);
-      members[roomName][messageTo].emit('chat message', req);
+      rooms[roomName].members[messageTo].emit('chat message', req);
     }
     else {
       // 全ての入室中のクライアントへ転送
@@ -109,8 +113,8 @@ io.on('connection', socket => {
 
     // すべてのルームからメンバーを削除
     // （クライアントの不正な切断による退室には未対応）
-    Object.keys(members).forEach(roomName => {
-      if (members[roomName][userName]) {
+    Object.keys(rooms).forEach(roomName => {
+      if (rooms[roomName].members[userName]) {
         // 退室したクライアントを除く全ての入室中のクライアントへ送信
         socket.to(roomName).emit('chat message', {
           type: 'leave',
@@ -118,7 +122,7 @@ io.on('connection', socket => {
           roomName,
         });
       }
-      delete members[roomName][userName];
+      delete rooms[roomName].members[userName];
     });
   });
 
