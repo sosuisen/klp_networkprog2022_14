@@ -102,10 +102,17 @@ io.on('connection', socket => {
     // 送信元のuserNameをnameプロパティを追加
     req.name = userName;
 
-    if(messageTo && rooms[roomName].members[messageTo]) {
-      // 自分自身と指定クライアントへのみ転送
-      socket.emit('chat message', req);
-      rooms[roomName].members[messageTo].emit('chat message', req);
+    if (messageTo) {
+      if (rooms[roomName].members[messageTo]) {
+        // 自分自身と指定クライアントへのみ転送
+        socket.emit('chat message', req);
+        rooms[roomName].members[messageTo].emit('chat message', req);
+      }
+      else {
+        req.name = 'bot';
+        req.data = `${messageTo}さんはいません`;
+        socket.emit('chat message', req);
+      }
     }
     else {
       // 全ての入室中のクライアントへ転送
