@@ -80,7 +80,7 @@ io.on('connection', socket => {
     }
 
     if (messageTo === 'bot') {
-      if (message !== ''){
+      if (message !== '') {
         req.name = 'bot';
         if (message === 'date') {
           req.data = Date();
