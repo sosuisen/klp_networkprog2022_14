@@ -50,11 +50,14 @@ io.on('connection', socket => {
 
   console.log(`[WebSocket] connected from [${roomName}] ${userName} (${ip})`);
   // 1-2) 全ての入室中のクライアントへ通知
-  io.to(roomName).emit('chat message', {
+  const mes = {
     type: 'enter',
     name: userName,
     roomName,
-  });
+  };
+  io.to(roomName).emit('chat message', mes);
+  // ログに追加
+  rooms[roomName].log.push(mes);
 
   // (2) メッセージ受信時の処理を追加
   socket.on('chat message', req => {
@@ -104,6 +107,8 @@ io.on('connection', socket => {
     else {
       // 全ての入室中のクライアントへ転送
       io.to(roomName).emit('chat message', req);
+      // ログに追加
+      rooms[roomName].log.push(req);
     }
   });
 
@@ -116,11 +121,14 @@ io.on('connection', socket => {
     Object.keys(rooms).forEach(roomName => {
       if (rooms[roomName].members[userName]) {
         // 退室したクライアントを除く全ての入室中のクライアントへ送信
-        socket.to(roomName).emit('chat message', {
+        const mes = {
           type: 'leave',
           name: userName,
           roomName,
-        });
+        };
+        socket.to(roomName).emit('chat message', mes);
+        // ログに追加
+        rooms[roomName].log.push(mes);
       }
       delete rooms[roomName].members[userName];
     });
