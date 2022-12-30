@@ -32,7 +32,8 @@ io.on('connection', socket => {
     return;
   }
   // roomName が undefined や '' のときは main
-  const roomName = socket.handshake.query.roomName || 'main';
+  // 部屋の移動時に変更があるため、const ではなく let にする。
+  let roomName = socket.handshake.query.roomName || 'main';
 
   // roonName へ入室
   socket.join(roomName);
@@ -71,31 +72,68 @@ io.on('connection', socket => {
 
     // 誰宛のメッセージか確認
     let messageTo = '';
-    let message = req.data;
     // 念のため日本語の空白文字も加えておく（なくてもよい）
-    const match = /^@(.+)[ 　](.+)$/.exec(req.data);
-    if (match) {
-      messageTo = match[1];
-      message = match[2];
-    }
-
-    if (messageTo === 'bot') {
-      if (message !== ''){
+    const msgArr = req.data.split(/[ 　]/);
+    if (msgArr.length >= 2) {
+      messageTo = msgArr[0].slice(1); // 先頭の@を削除
+      if (messageTo === 'bot') {
         req.name = 'bot';
-        if (message === 'date') {
+        if (msgArr[1] === 'date') {
           req.data = Date();
         }
-        else if (message === 'list') {
+        else if (msgArr[1] === 'list') {
           req.data = '現在の入室者は ' + Object.keys(rooms[roomName].members).join(', ');
+        }
+        else if (msgArr[1] === 'join') {
+          if (msgArr.length >= 3) {
+            // 現在の部屋から退出
+            socket.leave(roomName);
+            let mes = {
+              type: 'leave',
+              name: userName,
+              roomName,
+            };
+            io.to(roomName).emit('chat message', mes);
+            // ログに追加
+            rooms[roomName].log.push(mes);
+
+            // rooms から削除
+            delete rooms[roomName].members[userName];
+
+            // 指定の部屋へ入室
+            roomName = msgArr[2];
+            console.log(`${userName} join to ${roomName}`);
+            // 存在しない部屋が指定された場合は作成
+            if (!rooms[roomName]) {
+              rooms[roomName] = {};
+              // ルームのメンバーを格納するオブジェクト
+              rooms[roomName].members = {};
+              // ルームのログを格納する配列
+              rooms[roomName].log = [];
+            }
+            rooms[roomName].members[userName] = socket;
+            socket.join(roomName);
+
+            mes = {
+              type: 'enter',
+              name: userName,
+              roomName,
+            };
+            io.to(roomName).emit('chat message', mes);
+            // ログに追加
+            rooms[roomName].log.push(mes);
+            return;
+          }
         }
         else {
           return;
         }
         // 送信元のクライアントにのみ返信
         socket.emit('chat message', req);
+
+        // bot の場合はここで終わり。
+        return;
       }
-      // bot の場合はここで終わり。
-      return;
     }
 
     // bot宛でないメッセージの場合
