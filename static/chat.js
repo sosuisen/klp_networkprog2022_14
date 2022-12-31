@@ -8,6 +8,7 @@ const resetUI = () => {
   document.getElementById('roomName').disabled = false;
   document.getElementById('enterLeaveButton').innerText = '入室';
   document.getElementById('status').innerText = '[退室中]';
+  document.getElementById('fromServer').innerHTML = '';
 };
 
 const connect = () => {
@@ -27,8 +28,7 @@ const connect = () => {
     document.getElementById('status').innerText = '[入室済]';
   });
 
-  // (4) メッセージ受信時の処理を追加
-  socket.on('chat message', obj => {
+  const parseChatMessage = obj => {
     if (obj.type === 'message') {
       document.getElementById('fromServer').innerHTML += `[${obj.roomName}] ${obj.name}: ${obj.data}<br />`;
     }
@@ -44,7 +44,10 @@ const connect = () => {
         document.getElementById('typing').innerText = '';
       }, 1000);
     }   
-  });
+  };
+
+  // (4) メッセージ受信時の処理を追加
+  socket.on('chat message', parseChatMessage);
 
   // (5) サーバから切断されたときの処理を追加
   socket.on('disconnect', reason => {
