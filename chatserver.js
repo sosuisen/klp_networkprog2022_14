@@ -49,7 +49,7 @@ io.on('connection', socket => {
   }
   rooms[roomName].members[userName] = socket;
 
-  // 過去ログを送信
+  // バックログを送信
   socket.emit('log', rooms[roomName].log);
 
   console.log(`[WebSocket] connected from [${roomName}] ${userName} (${ip})`);

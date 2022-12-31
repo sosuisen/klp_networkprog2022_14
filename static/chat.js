@@ -49,7 +49,7 @@ const connect = () => {
   // (4) メッセージ受信時の処理を追加
   socket.on('chat message', parseChatMessage);
 
-  // 過去ログを受信
+  // バックログを受信
   socket.on('log', arr => arr.forEach(parseChatMessage));
   
   // (5) サーバから切断されたときの処理を追加
