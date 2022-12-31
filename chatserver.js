@@ -120,8 +120,6 @@ io.on('connection', socket => {
       roomName,
     };
     socket.to(roomName).emit('chat message', mes);
-    // ログに追加
-    rooms[roomName].log.push(mes);
     delete rooms[roomName].members[userName];
   });
 
